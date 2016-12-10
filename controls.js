@@ -16,6 +16,8 @@ window.addEventListener('touchmove', function(e){
     e.preventDefault();
 });
 
+
+
 var CONTROLS = {
     RETREAT: {
         initial: 0.4,
@@ -157,64 +159,103 @@ var oscillators = {};
 
 var first_touch = false;
 
-// Touchy.js creates a single global object called 'Touchy'
-var toucher = Touchy(document.body, function (hand, finger) {
-    // this === toucher
-    // toucher.stop() : stop  watching element for touch events
-    // toucher.start(): start watching element for touch events
+function start_touch(point){
+    point.start = (new Date()).valueOf();
 
-    // This function will be called for every finger that touches the screen
-    // regardless of what other fingers are currently interacting.
+    if (!first_touch) {
+        //canvas.webkitRequestFullScreen();
+        document.getElementById('help').style.display = 'none';
+    }
+    first_touch = true;
 
-    // 'finger' is an object representing the entire path of a finger
-    // on the screen. So a touch-drag-release by a single finger would be
-    // encapsulated into this single object.
+    // save point in fingers hash
+    fingers[point.id] = point;
 
-    // 'hand' is an object holding all fingers currently interacting with the
-    // screen.
-    // 'hand.fingers' returns an Array of fingers currently on the screen
-    // including this one.
-    // In this case we are only listening to a single finger at a time.
+    oscillators[point.id] = new Oscillator();
+    process_touch(point);
+    oscillators[point.id].play();
+};
 
-    // This callback is fired when the finger initially touches the screen.
-    finger.on('start', function (point) {
-        
-        point.start = (new Date()).valueOf();
-        
-        if (!first_touch) {
-            //canvas.webkitRequestFullScreen();
-            document.getElementById('help').style.display = 'none';
+function move_touch(point){
+    process_touch(point);
+    oscillators[point.id].refresh();
+    // save point in fingers hash
+    point.start = fingers[point.id].start;
+    fingers[point.id] = point;
+}
+
+var end_touch = function (point) {
+    //setTimeout(function(){
+    console.log('note lasted', (new Date()).valueOf() - fingers[point.id].start)
+    fingers[point.id] = null;
+    oscillators[point.id].stop();
+    //}, 15)
+}
+
+
+if ('ontouchstart' in document.documentElement) {
+
+    // Touchy.js creates a single global object called 'Touchy'
+    var toucher = Touchy(document.body, function (hand, finger) {
+        // this === toucher
+        // toucher.stop() : stop  watching element for touch events
+        // toucher.start(): start watching element for touch events
+
+        // This function will be called for every finger that touches the screen
+        // regardless of what other fingers are currently interacting.
+
+        // 'finger' is an object representing the entire path of a finger
+        // on the screen. So a touch-drag-release by a single finger would be
+        // encapsulated into this single object.
+
+        // 'hand' is an object holding all fingers currently interacting with the
+        // screen.
+        // 'hand.fingers' returns an Array of fingers currently on the screen
+        // including this one.
+        // In this case we are only listening to a single finger at a time.
+
+        // This callback is fired when the finger initially touches the screen.
+        finger.on('start', start_touch);
+
+        // This callback is fired when finger moves.
+        finger.on('move', move_touch);
+
+        // This callback is fired when finger is released from the screen.
+        finger.on('end', end_touch);
+
+        // finger.lastPoint refers to the last touched point by the
+        // finger at any given time.
+    });
+} else {
+
+    var _mouse_held = false;
+    window.addEventListener('mousedown', function(e){
+        var touch = {
+            x: e.pageX,
+            y: e.pageY,
+            id: 1
+        };
+        start_touch(touch);
+        _mouse_held = true;
+    });
+    window.addEventListener('mousemove', function(e){
+        if (_mouse_held) {
+            
+            var touch = {
+                x: e.pageX,
+                y: e.pageY,
+                id: 1
+            };
+            move_touch(touch);
         }
-        first_touch = true;
-
-        // save point in fingers hash
-        fingers[point.id] = point;
-
-        oscillators[point.id] = new Oscillator();
-        process_touch(point);
-        oscillators[point.id].play();
-        // 'point' is a coordinate of the following form:
-        // { id: <string>, x: <number>, y: <number>, time: <date> }
     });
-
-    // This callback is fired when finger moves.
-    finger.on('move', function (point) {
-        process_touch(point);
-        oscillators[point.id].refresh();
-        // save point in fingers hash
-        point.start = fingers[point.id].start;
-        fingers[point.id] = point;
+    window.addEventListener('mouseup', function(e){
+        var touch = {
+            x: e.pageX,
+            y: e.pageY,
+            id: 1
+        };
+        end_touch(touch);
+        _mouse_held = false;
     });
-
-    // This callback is fired when finger is released from the screen.
-    finger.on('end', function (point) {
-        //setTimeout(function(){
-        console.log('note lasted', (new Date()).valueOf() - fingers[point.id].start)
-        fingers[point.id] = null;
-        oscillators[point.id].stop();
-        //}, 15)
-    });
-
-    // finger.lastPoint refers to the last touched point by the
-    // finger at any given time.
-});
+}

@@ -12,9 +12,15 @@ body {
   margin: 0; padding: 0; overflow: hidden;
   width: 100%;
   height: 100%;
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Chrome/Safari/Opera */
+     -khtml-user-select: none; /* Konqueror */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  not supported by any browser */
 }
-canvas {
-}
+
 .control {
   position: absolute;
   left: 80%;
@@ -68,7 +74,7 @@ canvas {
   z-index: 1;
   opacity: 0.5;
   position: absolute;
-  box-shadow: 0.5vh 0.5vh 200vh rgba(0,0,0,0.5);
+  box-shadow: 0.5vh 0.5vh 10px rgba(0,0,0,0.5);
   color: black;
   /*text-shadow: 1px 1px 3px rgba(0,0,0,0.8);*/
 }
