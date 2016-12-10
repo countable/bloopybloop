@@ -22,13 +22,14 @@ function Oscillator() {
   this.canvas = document.querySelector('canvas');
   this.attack = 0.01;
   this.retreat = CONTROLS.RETREAT.value;
+  this.decay = CONTROLS.DECAY.value;
   this._frequency = 200;
   this._gain = 1;
   this.oscillator = context.createOscillator();
   
 
-  var real = new Float32Array(6);
-  var imag = new Float32Array(6);
+  var real = new Float32Array(7);
+  var imag = new Float32Array(7);
   real[0] = 0;
   imag[0] = 0;
   real[1] = 0.66;
@@ -41,36 +42,45 @@ function Oscillator() {
   imag[4] = 0;
   real[5] = CONTROLS.H3.value;
   imag[5] = 0;
+  real[6] = CONTROLS.H3.value;
+  imag[6] = 0;
+
   var wave = context.createPeriodicWave(real, imag, {disableNormalization: true});
+
   this.oscillator.setPeriodicWave(wave);
-
-
   this.volume = context.createGain();
   this.envelope = context.createGain();
+
   // arrange nodes.
   this.oscillator.connect(this.volume);
   this.volume.connect(this.envelope);
   this.envelope.connect(context.destination);
   
+  // initial gains.
   this.volume.gain.value = 1;
-
-  this.envelope.gain.value = 0;
+  this.envelope.gain.value = 1;
 }
 
 Oscillator.prototype.play = function() {
 
   var now = context.currentTime;
-  this.envelope.gain.linearRampToValueAtTime(1, now + this.attack);
-
   this.oscillator[this.oscillator.start ? 'start' : 'noteOn'](0);
+  this.envelope.gain.cancelScheduledValues( now );
+  this.envelope.gain.linearRampToValueAtTime(0, now + this.decay);
 
 };
+
+Oscillator.prototype.refresh = function(){
+  var now = context.currentTime;
+  this.envelope.gain.value = 1;
+  this.envelope.gain.cancelScheduledValues( now );
+  this.envelope.gain.linearRampToValueAtTime(0, now + this.decay);
+}
 
 Oscillator.prototype.stop = function() {
   // fade out (retreat);
   var now = context.currentTime;
-  //this.envelope.gain.cancelScheduledValues( now );
-  console.log(this.retreat, 'is the retreat')
+  this.envelope.gain.cancelScheduledValues( now );
   this.envelope.gain.linearRampToValueAtTime(0, now+this.retreat);
   var sample=this;
   setTimeout(function(){
@@ -81,7 +91,6 @@ Oscillator.prototype.stop = function() {
 Oscillator.prototype.toggle = function() {
   (this.isPlaying ? this.stop() : this.play());
   this.isPlaying = !this.isPlaying;
-
 };
 
 Oscillator.prototype.changeGain = function(val) {
@@ -92,7 +101,10 @@ Oscillator.prototype.changeGain = function(val) {
 };
 
 Oscillator.prototype.changeFrequency = function(val) {
+  var now = context.currentTime;
   this._frequency = val;
+  this.envelope.gain.cancelScheduledValues( now );
+  this.envelope.gain.linearRampToValueAtTime(0, now + this.decay);
   this.oscillator.frequency.value = val;
 };
 

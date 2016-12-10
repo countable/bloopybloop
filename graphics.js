@@ -21,7 +21,7 @@ function update_canvas_size(){
     }
 }
 
-update_canvas_size();
+
 
 
 // Utility to complain loudly if we fail to find the uniform

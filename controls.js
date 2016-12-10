@@ -18,8 +18,13 @@ window.addEventListener('touchmove', function(e){
 
 var CONTROLS = {
     RETREAT: {
-        initial: 0.25,
+        initial: 0.4,
         min: 0,
+        max: 3
+    },
+    DECAY: {
+        initial: 0.6,
+        min: 0.01,
         max: 3
     },
     H1: {
@@ -61,75 +66,12 @@ function update() {
     if (updateStarted) return;
     updateStarted = true;
     
-    update_canvas_size();
-
-    var i, len = touches.length;
+    //update_canvas_size();
 
     for (var k in fingers) {
 
         if (fingers[k]) {
-
-            var touch = fingers[k];
-            var px = touch.x;
-            var py = touch.y;
-            if (px < 0) px=0;
-            if (py < 0) py=0;
-            if (px > WIDTH) px=WIDTH;
-            if (py > WIDTH) py=HEIGHT;
-            var dx = px/WIDTH;
-            var dy = py/HEIGHT;
-
-            // controls
-
-            if (dx > 0.8 && dy < 0.4) {
-
-                var axis;
-                if (dy < 0.1) {
-                    axis = 'H1';
-                } else if (dy < 0.2) {
-                    axis = 'H2';
-                } else if (dy < 0.3) {
-                    axis = 'H3';
-                } else if (dy < 0.4) {
-                    axis = 'RETREAT';
-                }
-                var pct = (dx - 0.8) / 0.2;
-                set_control_percent(axis, pct);
-
-            }
-
-            var gain;
-
-            var n_octaves = 1; // per widht of the screen.
-            var base_freq;
-            if (dy > 0.666) {
-                base_freq = 440 * Math.pow(1.059463, 16 * -n_octaves);
-                gain = (dy - .66) * 3;
-            } else if (dy > 0.333) {
-                gain = (dy - .33) * 3;
-                base_freq = 440
-            } else {
-                base_freq = 440 * Math.pow(1.059463, 16 * n_octaves)
-                gain = (dy - .00) * 3;
-            }
-
-            gain = gain * gain;
-            
-            var note_input = px / WIDTH;
-
-            //discretize notes?
-            //note_input = Math.floor(n_octaves * 16 * note_input) / (n_octaves * 16);
-
-            note_input -= 0.5; // detune in both directions from mid-screen.
-
-            // A4 (440hz) is centered, and the screen spans n_octaves (16 half-notes)
-            oscillators[k].changeFrequency( base_freq * Math.pow(1.059463, 16 * n_octaves * note_input));
-
-            unif_freq = px / WIDTH;
-
-            oscillators[k].changeGain( gain );
-
-            unif_gain = gain;
+            process_touch(fingers[k]);
         
         }
     }
@@ -139,11 +81,75 @@ function update() {
     return;
 }
 
+function ol(){
+    update_canvas_size();
+}
 
-function ol() {
+function process_touch(touch){
 
-    timer = setInterval(update, 15);
 
+    var px = touch.x;
+    var py = touch.y;
+    if (px < 0) px=0;
+    if (py < 0) py=0;
+    if (px > WIDTH) px=WIDTH;
+    if (py > WIDTH) py=HEIGHT;
+    var dx = px/WIDTH;
+    var dy = py/HEIGHT;
+
+    // controls
+
+    if (dx > 0.8 && dy < 0.5) {
+
+        var axis;
+        if (dy < 0.1) {
+            axis = 'H1';
+        } else if (dy < 0.2) {
+            axis = 'H2';
+        } else if (dy < 0.3) {
+            axis = 'H3';
+        } else if (dy < 0.4) {
+            axis = 'RETREAT';
+        } else if (dy < 0.5) {
+            axis = 'DECAY';
+        }
+        var pct = (dx - 0.8) / 0.2;
+        set_control_percent(axis, pct);
+
+    }
+
+    var gain;
+
+    var n_octaves = 1; // per widht of the screen.
+    var base_freq;
+    if (dy > 0.666) {
+        base_freq = 440 * Math.pow(1.059463, 16 * -n_octaves);
+        gain = (dy - .66) * 3;
+    } else if (dy > 0.333) {
+        gain = (dy - .33) * 3;
+        base_freq = 440
+    } else {
+        base_freq = 440 * Math.pow(1.059463, 16 * n_octaves)
+        gain = (dy - .00) * 3;
+    }
+
+    gain = gain * gain;
+
+    var note_input = px / WIDTH;
+
+    //discretize notes?
+    //note_input = Math.floor(n_octaves * 16 * note_input) / (n_octaves * 16);
+
+    note_input -= 0.5; // detune in both directions from mid-screen.
+
+    // A4 (440hz) is centered, and the screen spans n_octaves (16 half-notes)
+    oscillators[touch.id].changeFrequency( base_freq * Math.pow(1.059463, 16 * n_octaves * note_input));
+
+    unif_freq = px / WIDTH;
+
+    oscillators[touch.id].changeGain( gain );
+
+    unif_gain = gain;
 };
 
 var fingers = {};
@@ -174,12 +180,18 @@ var toucher = Touchy(document.body, function (hand, finger) {
     finger.on('start', function (point) {
         
         point.start = (new Date()).valueOf();
-        //if (!first_touch) canvas.webkitRequestFullScreen();
+        
+        if (!first_touch) {
+            //canvas.webkitRequestFullScreen();
+            document.getElementById('help').style.display = 'none';
+        }
         first_touch = true;
 
+        // save point in fingers hash
         fingers[point.id] = point;
+
         oscillators[point.id] = new Oscillator();
-        update();
+        process_touch(point);
         oscillators[point.id].play();
         // 'point' is a coordinate of the following form:
         // { id: <string>, x: <number>, y: <number>, time: <date> }
@@ -187,6 +199,9 @@ var toucher = Touchy(document.body, function (hand, finger) {
 
     // This callback is fired when finger moves.
     finger.on('move', function (point) {
+        process_touch(point);
+        oscillators[point.id].refresh();
+        // save point in fingers hash
         point.start = fingers[point.id].start;
         fingers[point.id] = point;
     });
@@ -196,7 +211,7 @@ var toucher = Touchy(document.body, function (hand, finger) {
         //setTimeout(function(){
         console.log('note lasted', (new Date()).valueOf() - fingers[point.id].start)
         fingers[point.id] = null;
-        oscillators[point.id] && oscillators[point.id].stop();
+        oscillators[point.id].stop();
         //}, 15)
     });
 

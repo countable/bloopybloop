@@ -4,8 +4,17 @@
     <title>Touch Tracker Marker</title>
     <meta name="viewport" content="width=device-width, user-scalable=no">
 <style type="text/css">
-body { margin: 0px; overflow: hidden; }
-canvas { border: 0px none transparent; }
+* {box-sizing: border-box}
+html {
+  margin: 0; padding: 0;
+}
+body {
+  margin: 0; padding: 0; overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+canvas {
+}
 .control {
   position: absolute;
   left: 80%;
@@ -31,6 +40,10 @@ canvas { border: 0px none transparent; }
   top: 30%;
   background: blue;
 }
+#DECAY {
+  top: 40%;
+  background: blue;
+}
 .inner {
   position: absolute;
   font-family: sans-serif;
@@ -42,6 +55,25 @@ canvas { border: 0px none transparent; }
   top: 0;
   left: 0;
   width: 200px;
+}
+#help {
+  top: 20%;
+  left: 20%;
+  bottom: 20%;
+  right: 20%;
+  font-size: 2.5vh;
+  font-family: sans-serif;
+  background: white;
+  padding: 3vh;
+  z-index: 1;
+  opacity: 0.5;
+  position: absolute;
+  box-shadow: 0.5vh 0.5vh 200vh rgba(0,0,0,0.5);
+  color: black;
+  /*text-shadow: 1px 1px 3px rgba(0,0,0,0.8);*/
+}
+h1 {
+  font-size: 5vh;
 }
 </style>
 
@@ -65,10 +97,26 @@ canvas { border: 0px none transparent; }
   upper hars
   </div>
 </div>
+
 <div class="control" id="RETREAT">
   <div class="inner">
   retreat
   </div>
+</div>
+<div class="control" id="DECAY">
+  <div class="inner">
+  decay
+  </div>
+</div>
+
+<div id="help">
+<h1>BloopyBloop Synth Pad</h1>
+<p>
+This is an oversimplified synthesizer pad I made for my 6 month old daughter to play with sounds. There are 3 octaves of different frequencies that can be played by touching the screen (darker areas correspond to lower frequencies). The timbre and envelope of the sounds have some adjustment bars on the right.
+<p>
+<p>
+Just touch to start playing!
+</p>
 </div>
 
 <script src="webgl-utils.js"></script>
