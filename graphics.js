@@ -58,9 +58,12 @@ function main() {
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
   var positions = [
-    0, 0,
-    0, 0.5,
-    0.7, 0,
+    -1.0, -1.0,
+    1.0, -1.0,
+    -1.0, 1.0,
+    1.0, 1.0,
+    -1.0, 1.0,
+    1.0, -1.0
   ];
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
@@ -69,36 +72,52 @@ function main() {
 
   webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 
-  // Tell WebGL how to convert from clip space to pixels
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-  // Clear the canvas
-  gl.clearColor(0, 0, 0, 0);
-  gl.clear(gl.COLOR_BUFFER_BIT);
+  setInterval(function(){
 
-  // Tell it to use our program (pair of shaders)
-  gl.useProgram(program);
+    // Tell WebGL how to convert from clip space to pixels
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-  // Turn on the attribute
-  gl.enableVertexAttribArray(positionAttributeLocation);
+    // Clear the canvas
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    
+    var touchUnif = gl.getUniformLocation(program, "touch");
+    var redUnif = gl.getUniformLocation(program, "red");
+    var greenUnif = gl.getUniformLocation(program, "green");
+    var blueUnif = gl.getUniformLocation(program, "blue");
 
-  // Bind the position buffer.
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    // Tell it to use our program (pair of shaders)
+    gl.useProgram(program);
+    
+    gl.uniform1f(touchUnif, 100, 100);
+    gl.uniform1f(redUnif, unif_gain);
+    gl.uniform1f(greenUnif, unif_freq);
+    gl.uniform1f(blueUnif, unif_gain);
 
-  // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-  var size = 2;          // 2 components per iteration
-  var type = gl.FLOAT;   // the data is 32bit floats
-  var normalize = false; // don't normalize the data
-  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-  var offset = 0;        // start at the beginning of the buffer
-  gl.vertexAttribPointer(
-      positionAttributeLocation, size, type, normalize, stride, offset)
+    // Turn on the attribute
+    gl.enableVertexAttribArray(positionAttributeLocation);
 
-  // draw
-  var primitiveType = gl.TRIANGLES;
-  var offset = 0;
-  var count = 3;
-  gl.drawArrays(primitiveType, offset, count);
+    // Bind the position buffer.
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+    // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+    var size = 2;          // 2 components per iteration
+    var type = gl.FLOAT;   // the data is 32bit floats
+    var normalize = false; // don't normalize the data
+    var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+    var offset = 0;        // start at the beginning of the buffer
+    gl.vertexAttribPointer(
+        positionAttributeLocation, size, type, normalize, stride, offset)
+
+    // draw
+    var primitiveType = gl.TRIANGLES;
+    var offset = 0;
+    var count = 6;
+    gl.drawArrays(primitiveType, offset, count);
+
+  }, 40)
+
 }
 
 main();

@@ -6,25 +6,60 @@ var timer;
 var updateStarted = false;
 var touches = [];
 
+var unif_gain = 0;
+var unif_freq = 0;
+
 var canvas = document.getElementById('c');
+
+// no scrolling the page please.
+window.addEventListener('touchmove', function(e){
+    e.preventDefault();
+});
+
+var CONTROLS = {
+    RETREAT: {
+        options: [0.05,0.5,1,2],
+        selected: 2
+    },
+    ATTACK: {
+        options: [0.05,0.2,0.5,1],
+        selected: 0
+    },
+    SHAPE: {
+        options: ['square','sawtooth','sine','triangle','wave'],
+        selected: 0
+    }
+};
+
+var cycle_control = function(control) {
+    CONTROLS[control].selected = (CONTROLS[control].selected + 1) % CONTROLS[control].options.length;
+    update_control_text(control);
+};
+var update_control_text = function(control){
+    document.getElementById(control).innerHTML = control + ':' + CONTROLS[control].options[CONTROLS[control].selected]
+};
+update_control_text('RETREAT');
+update_control_text('ATTACK');
+update_control_text('SHAPE');
 
 function update() {
 
     if (updateStarted) return;
     updateStarted = true;
 
-    var nw = window.innerWidth;
-    var nh = window.innerHeight;
+    var nw = window.innerWidth || screen.width;
+    var nh = window.innerHeight || screen.height;
 
+    
     if ((w != nw) || (h != nh)) {
-        w = nw;
+        w = nw * .75
         h = nh;
         canvas.style.width = w+'px';
         canvas.style.height = h+'px';
-        canvas.width = w;
-        canvas.height = h;
+        //canvas.width = w;
+        //canvas.height = h;
     }
-
+    
     var i, len = touches.length;
 
     for (var k in fingers) {
@@ -34,10 +69,30 @@ function update() {
             var touch = fingers[k];
             var px = touch.x;
             var py = touch.y;
+            if (px < 0) px=0;
+            if (py < 0) py=0;
+            if (px > w) px=w;
+            if (py > h) py=h;
 
-            var new_detune = 200 * ( py / w ) - 100;
-            oscillators[k].changeFrequency( px / 2 + 200 );
-            oscillators[k].changeDetune( new_detune );
+            var n_octaves = 1;
+            
+            var gain = py / h;
+
+            var note_input = px / w;
+
+            //discretize notes?
+            note_input = Math.floor(n_octaves * 16 * note_input) / (n_octaves * 16);
+
+            note_input -= 0.5; // detune in both directions from mid-screen.
+
+            // A4 (440hz) is centered, and the screen spans n_octaves (16 half-notes)
+            oscillators[k].changeFrequency( 440 * Math.pow(1.059463, 16 * n_octaves * note_input));
+
+            unif_freq = px / w;
+
+            oscillators[k].changeGain( gain );
+
+            unif_gain = gain;
         }
     }
 
@@ -57,8 +112,10 @@ function ol() {
 var fingers = {};
 var oscillators = {};
 
+var first_touch = false;
+
 // Touchy.js creates a single global object called 'Touchy'
-var toucher = Touchy(document.body, function (hand, finger) {
+var toucher = Touchy(document.getElementById('c'), function (hand, finger) {
     // this === toucher
     // toucher.stop() : stop  watching element for touch events
     // toucher.start(): start watching element for touch events
@@ -78,13 +135,15 @@ var toucher = Touchy(document.body, function (hand, finger) {
 
     // This callback is fired when the finger initially touches the screen.
     finger.on('start', function (point) {
+        
+
+        //if (!first_touch) canvas.webkitRequestFullScreen();
+        first_touch = true;
 
         fingers[point.id] = point;
         oscillators[point.id] = new OscillatorSample();
+        update();
         oscillators[point.id].play();
-
-        console.log(point.id);
-
         // 'point' is a coordinate of the following form:
         // { id: <string>, x: <number>, y: <number>, time: <date> }
     });
@@ -96,9 +155,11 @@ var toucher = Touchy(document.body, function (hand, finger) {
 
     // This callback is fired when finger is released from the screen.
     finger.on('end', function (point) {
-        fingers[point.id] = null;
-        oscillators[point.id].stop();
+        setTimeout(function(){
 
+            fingers[point.id] = null;
+            oscillators[point.id].stop();
+        }, 15)
     });
 
     // finger.lastPoint refers to the last touched point by the

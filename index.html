@@ -5,7 +5,25 @@
     <meta name="viewport" content="width=device-width, user-scalable=no">
 <style type="text/css">
 body { margin: 0px; overflow: hidden; }
-canvas { border: 1px solid black; }
+canvas { border: 0px none transparent; }
+.control {
+  position: absolute;
+  right: 0;
+  width: 25%;
+  height: 25%;
+  border: 1px solid blue;
+  text-align:center;
+  vertical-align:center;
+}
+#SHAPE {
+  top: 0;
+}
+#ATTACK {
+  top: 25%;
+}
+#RETREAT {
+  top: 50%;
+}
 </style>
 
 </head>
@@ -13,8 +31,12 @@ canvas { border: 1px solid black; }
 
 <canvas id="c"></canvas>
 
+<div class="control" id="SHAPE" onclick="cycle_control('SHAPE');">shape</div>
+<div class="control" id="ATTACK"  onclick="cycle_control('ATTACK');">attack</div>
+<div class="control" id="RETREAT"  onclick="cycle_control('RETREAT');">retreat</div>
+
 <script src="webgl-utils.js"></script>
-<script src="webgl-lessons-helper.js"></script>
+<script src="webgl-helper.js"></script>
 <script id="2d-vertex-shader" type="notjs">
 
   // an attribute will receive data from a buffer
@@ -35,11 +57,16 @@ canvas { border: 1px solid black; }
   // fragment shaders don't have a default precision so we need
   // to pick one. mediump is a good default
   precision mediump float;
+  uniform float red;
+  uniform float green;
+  uniform float blue;
+  uniform vec2 touch;
+
 
   void main() {
     // gl_FragColor is a special variable a fragment shader
     // is responsible for setting
-    gl_FragColor = vec4(1, 0, 0.5, 1); // return redish-purple
+    gl_FragColor = vec4(red, green, blue, 1); // return redish-purple
   }
 
 </script>
@@ -47,8 +74,8 @@ canvas { border: 1px solid black; }
 
 <script type="text/javascript" src="touchy.js"></script>
 <script type="text/javascript" src="shared.js"></script>
-<script type="text/javascript" src="oscillator_sample.js"></script>
-<script type="text/javascript" src="bloopybloop.js"></script>
+<script type="text/javascript" src="oscillator.js"></script>
+<script type="text/javascript" src="controls.js"></script>
 
 </body>
 </html>
