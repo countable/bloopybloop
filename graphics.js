@@ -1,4 +1,37 @@
+
 "use strict";
+
+
+var canvas = document.getElementById("c");
+var gl = canvas.getContext('webgl');
+
+function update_canvas_size(){
+
+    var nw = window.innerWidth || screen.width;
+    var nh = window.innerHeight || screen.height;
+
+    
+    if ((WIDTH != nw) || (HEIGHT != nh)) {
+        WIDTH = nw;
+        HEIGHT = nh;
+        canvas.style.width = WIDTH+'px';
+        canvas.style.height = HEIGHT+'px';
+        canvas.width = WIDTH;
+        canvas.height = HEIGHT;
+    }
+}
+
+update_canvas_size();
+
+
+// Utility to complain loudly if we fail to find the uniform
+function getUniformLocation(program, name) {
+    var uniformLocation = gl.getUniformLocation(program, name);
+    if (uniformLocation === -1) {
+        throw 'Can not find uniform ' + name + '.';
+    }
+    return uniformLocation;
+}
 
 function createShader(gl, type, source) {
   var shader = gl.createShader(type);
@@ -73,7 +106,7 @@ function main() {
   webglUtils.resizeCanvasToDisplaySize(gl.canvas);
 
 
-  setInterval(function(){
+  var render = function(){
 
     // Tell WebGL how to convert from clip space to pixels
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -82,19 +115,38 @@ function main() {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     
-    var touchUnif = gl.getUniformLocation(program, "touch");
-    var redUnif = gl.getUniformLocation(program, "red");
-    var greenUnif = gl.getUniformLocation(program, "green");
-    var blueUnif = gl.getUniformLocation(program, "blue");
+    var screenUnif = getUniformLocation(program, "screen");
+    var redUnif = getUniformLocation(program, "red");
+    var greenUnif = getUniformLocation(program, "green");
+    var blueUnif = getUniformLocation(program, "blue");
+    var metaballsHandle = getUniformLocation(program, 'metaballs');
 
     // Tell it to use our program (pair of shaders)
     gl.useProgram(program);
     
-    gl.uniform1f(touchUnif, 100, 100);
+    gl.uniform2f(screenUnif, WIDTH, HEIGHT);
     gl.uniform1f(redUnif, unif_gain);
     gl.uniform1f(greenUnif, unif_freq);
     gl.uniform1f(blueUnif, unif_gain);
 
+    // To send the data to the GPU, we first need to
+    // flatten our data into a single array.
+    var dataToSendToGPU = new Float32Array(2 * 20);
+    var i=0;
+    for (var k in fingers) {
+      if (fingers[k] && i < 20) {
+        var baseIndex = 2 * i;
+        dataToSendToGPU[baseIndex + 0] = fingers[k].x;
+        dataToSendToGPU[baseIndex + 1] = HEIGHT-fingers[k].y;
+        i++;
+      }
+    }
+    for (;i<20;i++) {
+      dataToSendToGPU[2*i] = 0;
+      dataToSendToGPU[2*i+1] = 0;
+    }
+
+    gl.uniform2fv(metaballsHandle, dataToSendToGPU);
     // Turn on the attribute
     gl.enableVertexAttribArray(positionAttributeLocation);
 
@@ -116,7 +168,10 @@ function main() {
     var count = 6;
     gl.drawArrays(primitiveType, offset, count);
 
-  }, 40)
+    requestAnimationFrame(render);
+  }
+
+  requestAnimationFrame(render);
 
 }
 

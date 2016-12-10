@@ -8,21 +8,40 @@ body { margin: 0px; overflow: hidden; }
 canvas { border: 0px none transparent; }
 .control {
   position: absolute;
-  right: 0;
-  width: 25%;
-  height: 25%;
-  border: 1px solid blue;
+  left: 80%;
+  width: 20%;
+  height: 10%;
   text-align:center;
   vertical-align:center;
+  opacity: 0.5;
 }
-#SHAPE {
+#H1 {
   top: 0;
+  background: red;
 }
-#ATTACK {
-  top: 25%;
+#H2 {
+  top: 10%;
+  background: red;
+}
+#H3 {
+  top: 20%;
+  background: red;
 }
 #RETREAT {
-  top: 50%;
+  top: 30%;
+  background: blue;
+}
+.inner {
+  position: absolute;
+  font-family: sans-serif;
+  font-size: 3vh;
+  text-align: center;
+  padding-top: 3vh;
+  color: white;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+  top: 0;
+  left: 0;
+  width: 200px;
 }
 </style>
 
@@ -31,9 +50,26 @@ canvas { border: 0px none transparent; }
 
 <canvas id="c"></canvas>
 
-<div class="control" id="SHAPE" onclick="cycle_control('SHAPE');">shape</div>
-<div class="control" id="ATTACK"  onclick="cycle_control('ATTACK');">attack</div>
-<div class="control" id="RETREAT"  onclick="cycle_control('RETREAT');">retreat</div>
+<div class="control" id="H1">
+  <div class="inner">
+  1st har
+  </div>
+</div>
+<div class="control" id="H2">
+  <div class="inner">
+  2nd har
+  </div>
+</div>
+<div class="control" id="H3">
+  <div class="inner">
+  upper hars
+  </div>
+</div>
+<div class="control" id="RETREAT">
+  <div class="inner">
+  retreat
+  </div>
+</div>
 
 <script src="webgl-utils.js"></script>
 <script src="webgl-helper.js"></script>
@@ -60,22 +96,51 @@ canvas { border: 0px none transparent; }
   uniform float red;
   uniform float green;
   uniform float blue;
-  uniform vec2 touch;
-
+  uniform vec2 screen;
+  uniform vec2 metaballs[20];
 
   void main() {
     // gl_FragColor is a special variable a fragment shader
     // is responsible for setting
-    gl_FragColor = vec4(red, green, blue, 1); // return redish-purple
+    float x = gl_FragCoord.x;
+    float y = gl_FragCoord.y;
+    float v = 0.0;
+    float octave = 0.0;
+
+    for (int i = 0; i < 20; i++) {
+      vec2 mb = metaballs[i];
+      if (mb.x > 0.0 || mb.y > 0.0) {
+        float dx = mb.x - x;
+        float dy = mb.y - y;
+        float r = screen.x/20.0;
+        v += r*r/(dx*dx + dy*dy);
+      }
+    }
+
+    if (y / screen.y > .66) {
+      octave = 0.33 -  0.33*x/screen.x;
+    } else if (y / screen.y > .33) {
+      octave = 0.66 - 0.33*x/screen.x;
+    } else {
+      octave = 0.99 - 0.33*x/screen.x;
+    }
+
+    if (v > 1.0) {
+        gl_FragColor = octave * vec4(1.0, 1.0,
+                                1.0, 1.0);
+    } else {
+        gl_FragColor = octave * vec4(v, v, v, 1.0);
+    }
+    //gl_FragColor = vec4(red, green, blue, 1); // return redish-purple
   }
 
 </script>
-<script src="graphics.js"></script>
 
 <script type="text/javascript" src="touchy.js"></script>
 <script type="text/javascript" src="shared.js"></script>
 <script type="text/javascript" src="oscillator.js"></script>
 <script type="text/javascript" src="controls.js"></script>
+<script src="graphics.js"></script>
 
 </body>
 </html>
